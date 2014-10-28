@@ -32,7 +32,7 @@ fi
 
 # fix permission and ownership of ${DATA_DIR}
 chmod 755 ${DATA_DIR}
-chown git:git ${DATA_DIR}
+chown git:git ${DATA_DIR} -R
 
 cd ${INSTALL_DIR}
 

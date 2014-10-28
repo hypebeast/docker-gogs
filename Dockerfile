@@ -15,7 +15,7 @@ ADD assets/config/ /app/setup/config/
 ADD assets/run.sh /app/run.sh
 RUN chmod 755 /app/run.sh
 
-# TODO: Expose ENV
+# Expose ENV
 ENV GOGS_CUSTOM /data/gogs
 
 # Expose ports
