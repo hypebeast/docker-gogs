@@ -19,7 +19,7 @@ RUN chmod 755 /app/run.sh
 ENV GOGS_CUSTOM /data/gogs
 
 # Expose ports
-EXPOSE 80
+EXPOSE 3000
 
 # Add VOLUMESs to allow backup and customization of config
 VOLUME ["/data"]
