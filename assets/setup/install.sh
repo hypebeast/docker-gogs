@@ -35,6 +35,7 @@ ln -sf ${DATA_DIR}/../git /home/gogs/gogs-repositories
 chown -R git:git ${INSTALL_DIR}
 chmod 755 ${INSTALL_DIR}/gogs
 chmod 755 ${INSTALL_DIR}/scripts/start.sh
+chown -R git:git /home/gogs/gogs-repositories
 
 # cleanup
 rm -rf /var/lib/apt/lists/*
