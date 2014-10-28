@@ -57,7 +57,7 @@ fi
 mkdir -p custom
 ln -sf ${DATA_DIR}/custom/conf custom/conf
 
-cp -ar ./conf ${DATA_DIR}/conf
+cp -ar ./conf ${DATA_DIR}
 rm -rf conf
 ln -sf ${DATA_DIR}/conf conf
 
