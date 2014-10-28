@@ -9,15 +9,16 @@ adduser --disabled-login --gecos 'Gogs' gogs
 passwd -d gogs
 
 # add git user
-adduser --system --comment gogsgit git
+adduser --disabled-login --gecos 'gogsgit' git
+passwd -d git
 
 # Install Gogs, use local copy if available
 mkdir -p ${INSTALL_DIR}
 if [ -f ${SETUP_DIR}/gogs-${GOGS_VERSION}.tar.gz ]
 then
-    tar -zvxf ${SETUP_DIR}/gogs-${GOGS_VERSION}.tar.gz --strip=1 -C ${INSTALL_DIR}
+    tar -zvxf ${SETUP_DIR}/gogs-${GOGS_VERSION}.tar.gz -C ${INSTALL_DIR}
 else
-    wget -nv "http://gobuild3.qiniudn.com/github.com/gogits/gogs/tag-v-v${GOGS_VERSION}/gogs-linux-amd64.tar.gz" -O - | tar -zvxf - --strip=1 -C ${INSTALL_DIR}
+    wget -nv "http://gobuild3.qiniudn.com/github.com/gogits/gogs/tag-v-v${GOGS_VERSION}/gogs-linux-amd64.tar.gz" -O - | tar -zvxf - -C ${INSTALL_DIR}
 fi
 
 cd ${INSTALL_DIR}
