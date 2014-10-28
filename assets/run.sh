@@ -27,7 +27,7 @@ fi
 # Create required folders
 if ! test -d ${DATA_DIR}
 then
-    mkdir -p ${DATA_DIR}/data ${DATA_DIR}/log ${DATA_DIR}/../git
+    mkdir -p ${DATA_DIR}/data ${DATA_DIR}/log ${DATA_DIR}/conf ${DATA_DIR}/../git
 fi
 
 # fix permission and ownership of ${DATA_DIR}
@@ -56,6 +56,10 @@ fi
 # Create symlink to ${DATA_DIR}/custom/conf
 mkdir -p custom
 ln -sf ${DATA_DIR}/custom/conf custom/conf
+
+cp -ar ./conf ${DATA_DIR}/conf
+rm -rf conf
+ln -sf ${DATA_DIR}/conf conf
 
 # Copy over the templates, if no templates are found
 test -d ${DATA_DIR}/templates || cp -ar ./templates ${DATA_DIR}

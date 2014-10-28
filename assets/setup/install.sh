@@ -26,7 +26,10 @@ cd ${INSTALL_DIR}
 # Symlink folders
 ln -sf ${DATA_DIR}/log ./log
 ln -sf ${DATA_DIR}/data ./data
-ln -sf ${DATA_DIR}/../git /home/git
+
+# ERROR!!
+mkdir -p /home/gogs/gogs-repositories
+ln -sf ${DATA_DIR}/../git /home/gogs/gogs-repositories
 
 # Fix permissions
 chown -R git:git ${INSTALL_DIR}
