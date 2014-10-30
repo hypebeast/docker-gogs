@@ -43,14 +43,14 @@ then
     cp ${SETUP_DIR}/config/app.ini ${DATA_DIR}/custom/conf/
 
     # Configure database
-    sudo -u git -H sed 's/{{DB_HOST}}/'"${DB_HOST}"'/' -i ${DATA_DIR}/custom/conf/app.ini
-    sudo -u git -H sed 's/{{DB_PORT}}/'"${DB_PORT}"'/' -i ${DATA_DIR}/custom/conf/app.ini
-    sudo -u git -H sed 's/{{DB_USER}}/'"${DB_USER}"'/' -i ${DATA_DIR}/custom/conf/app.ini
-    sudo -u git -H sed 's/{{DB_PASS}}/'"${DB_PASS}"'/' -i ${DATA_DIR}/custom/conf/app.ini
-    sudo -u git -H sed 's/{{DB_NAME}}/'"${DB_NAME}"'/' -i ${DATA_DIR}/custom/conf/app.ini
+    sudo -u git -H sed -i .bak 's/{{DB_HOST}}/'"${DB_HOST}"'/' ${DATA_DIR}/custom/conf/app.ini
+    sudo -u git -H sed -i .bak 's/{{DB_PORT}}/'"${DB_PORT}"'/' ${DATA_DIR}/custom/conf/app.ini
+    sudo -u git -H sed -i .bak 's/{{DB_USER}}/'"${DB_USER}"'/' ${DATA_DIR}/custom/conf/app.ini
+    sudo -u git -H sed -i .bak 's/{{DB_PASS}}/'"${DB_PASS}"'/' ${DATA_DIR}/custom/conf/app.ini
+    sudo -u git -H sed -i .bak 's/{{DB_NAME}}/'"${DB_NAME}"'/' ${DATA_DIR}/custom/conf/app.ini
 
     # Set HTTP_PORT
-    sudo -u git -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i ${DATA_DIR}/custom/conf/app.ini
+    sudo -u git -H sed -i .bak  's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' ${DATA_DIR}/custom/conf/app.ini
 fi
 
 # Create symlink to ${DATA_DIR}/custom/conf

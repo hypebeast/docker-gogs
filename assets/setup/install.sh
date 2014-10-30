@@ -22,13 +22,11 @@ else
 fi
 
 cd ${INSTALL_DIR}
+rm -rf ./log ./data
 
 # Symlink folders
 ln -sf ${DATA_DIR}/log ./log
 ln -sf ${DATA_DIR}/data ./data
-
-# ERROR!!
-mkdir -p /home/gogs/gogs-repositories
 ln -sf ${DATA_DIR}/../git /home/gogs/gogs-repositories
 
 # Fix permissions
