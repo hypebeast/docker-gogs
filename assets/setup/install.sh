@@ -3,6 +3,7 @@
 GOGS_VERSION=0.5.5
 INSTALL_DIR=/home/gogs/gogs
 DATA_DIR=/data/gogs
+GIT_REPO_DIR=/data/git
 
 # add gogs user
 adduser --disabled-login --gecos 'Gogs' gogs
@@ -27,13 +28,16 @@ rm -rf ./log ./data
 # Symlink folders
 ln -sf ${DATA_DIR}/log ./log
 ln -sf ${DATA_DIR}/data ./data
-ln -sf ${DATA_DIR}/../git /home/gogs/gogs-repositories
+ln -sf ${GIT_REPO_DIR} /home/gogs/gogs-repositories
+
+# Create symlink to ${DATA_DIR}/custom/conf
+mkdir -p custom
+ln -sf ${DATA_DIR}/custom/conf custom/conf
 
 # Fix permissions
 chown -R git:git ${INSTALL_DIR}
 chmod 755 ${INSTALL_DIR}/gogs
 chmod 755 ${INSTALL_DIR}/scripts/start.sh
-chown -R git:git /home/gogs/gogs-repositories
 
 # cleanup
 rm -rf /var/lib/apt/lists/*

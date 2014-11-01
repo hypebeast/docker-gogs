@@ -55,10 +55,7 @@ fi
 
 cd ${INSTALL_DIR}
 
-# Create symlink to ${DATA_DIR}/custom/conf
-mkdir -p custom
-ln -sf ${DATA_DIR}/custom/conf custom/conf
-
+# Handle the conf dir
 cp -ar ./conf ${DATA_DIR}
 rm -rf conf
 ln -sf ${DATA_DIR}/conf conf
