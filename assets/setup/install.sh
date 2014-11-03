@@ -15,7 +15,7 @@ adduser --disabled-login --gecos 'gogsgit' git
 passwd -d git
 
 # Install Gogs, use local copy if available
-mkdir -p ${INSTALL_DIR}
+#mkdir -p ${INSTALL_DIR}
 if [ -f ${SETUP_DIR}/gogs-${GOGS_VERSION}.tar.gz ]
 then
     tar -zvxf ${SETUP_DIR}/gogs-${GOGS_VERSION}.tar.gz -C ${INSTALL_DIR}
@@ -23,7 +23,7 @@ else
     #wget -nv "http://gobuild3.qiniudn.com/github.com/gogits/gogs/tag-v-v${GOGS_VERSION}/gogs-linux-amd64.tar.gz" -O - | tar -zvxf - -C ${INSTALL_DIR}
     # TODO: Remove temporary URL and use instead gobuild
     wget -nv "https://github.com/gogits/gogs/releases/download/v0.5.5/linux_amd64.zip" -O /tmp/gogs_v0.5.5_linux_amd64.zip
-    unzip /tmp/gogs_v0.5.5_linux_amd64.zip -d ${INSTALL_DIR}
+    unzip /tmp/gogs_v0.5.5_linux_amd64.zip -d /home/gogs
     rm /tmp/gogs_v0.5.5_linux_amd64.zip
 fi
 
