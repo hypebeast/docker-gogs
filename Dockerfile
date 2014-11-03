@@ -3,7 +3,7 @@ MAINTAINER sebastian.ruml@gmail.com
 
 # Install packages
 RUN apt-get update && \
-    apt-get -y install wget git rsync
+    apt-get -y install wget git rsync unzip
 
 # Install Gogs
 ADD assets/setup/ /app/setup/
