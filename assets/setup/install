@@ -1,0 +1,90 @@
+#!/bin/bash
+
+GOGS_VERSION="v0.5.13"
+INSTALL_DIR="/home/gogs/gogs"
+
+DATA_DIR="/home/gogs/data"
+LOG_DIR="/var/log/gogs"
+SETUP_DIR="/app/setup"
+
+# add gogs user
+adduser --disabled-login --gecos 'Gogs' gogs
+passwd -d gogs
+
+# add git user
+adduser --disabled-login --gecos 'gogsgit' git
+passwd -d git
+
+# create symlink to ${DATA_DIR}/dotfiles/.ssh
+rm -rf /home/gogs/.ssh
+sudo -u gogs -H ln -s ${DATA_DIR}/dotfiles/.ssh /home/gogs/.ssh
+
+# Install gogs, use local copy if available
+mkdir -p /home/gogs ${LOG_DIR}
+
+if [ -f ${SETUP_DIR}/gogs-${GOGS_VERSION}.tar.bz2 ]
+then
+    tar -C /home/gogs -xvf ${SETUP_DIR}/gogs-${GOGS_VERSION}.tar.bz2
+else
+    wget -nv "https://github.com/gogits/gogs/releases/download/${GOGS_VERSION}/linux_amd64.zip" -O /tmp/gogs.zip
+    unzip /tmp/gogs.zip -d /home/gogs
+fi
+
+# Fix permissions
+chown -R gogs:gogs ${INSTALL_DIR}
+chmod 755 ${INSTALL_DIR}
+chmod a+x ${INSTALL_DIR}/gogs
+chown -R gogs:gogs ${LOG_DIR}
+chmod 755 ${LOG_DIR}
+
+# move supervisord.log file to ${LOG_DIR}/supervisor/
+sed 's|^logfile=.*|logfile='"${LOG_DIR}"'/supervisor/supervisord.log ;|' -i /etc/supervisor/supervisord.conf
+
+cd ${INSTALL_DIR}
+rm -rf ./log ./data
+
+ln -sf ${LOG_DIR} ./log
+ln -sf ${DATA_DIR}/gogs/data ./data
+
+# setup log rotation for gogs application logs
+cat > /etc/logrotate.d/gogs <<EOF
+${LOG_DIR}/gogs/*.log {
+  weekly
+  missingok
+  rotate 52
+  compress
+  delaycompress
+  notifempty
+  copytruncate
+}
+EOF
+
+# configure supervisord log rotation
+cat > /etc/logrotate.d/supervisord <<EOF
+${LOG_DIR}/supervisor/*.log {
+  weekly
+  missingok
+  rotate 52
+  compress
+  delaycompress
+  notifempty
+  copytruncate
+}
+EOF
+
+# configure supervisord to start gogs
+cat > /etc/supervisor/conf.d/gogs.conf <<EOF
+[program:gogs]
+priority=20
+directory=${INSTALL_DIR}
+command=${INSTALL_DIR}/gogs web
+user=gogs
+autostart=true
+autorestart=true
+stdout_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
+stderr_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
+EOF
+
+# cleanup
+rm -rf /var/lib/apt/lists/*
+

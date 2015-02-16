@@ -1,0 +1,249 @@
+#!/bin/bash
+
+INSTALL_DIR="/home/gogs/gogs"
+DATA_DIR="/home/gogs/data"
+LOG_DIR="/var/log/gogs"
+
+SETUP_DIR="/app/setup"
+SYSCONF_TEMPLATES_DIR="${SETUP_DIR}/config"
+USERCONF_TEMPLATES_DIR="${DATA_DIR}/config"
+
+DB_HOST=${DB_HOST:-}
+DB_PORT=${DB_PORT:-}
+DB_NAME=${DB_NAME:-}
+DB_USER=${DB_USER:-}
+DB_PASS=${DB_PASS:-}
+DB_TYPE=${DB_TYPE:-mysql}
+
+GOGS_PORT=${GOGS_PORT:-3000}
+GOGS_DOMAIN=${GOGS_DOMAIN:-localhost}
+GIT_REPO="${DATA_DIR}/git"
+
+# is a mysql or postgresql database linked?
+# requires that the mysql or postgresql containers have exposed
+# port 3306 and 5432 respectively.
+if [ -n "${MYSQL_PORT_3306_TCP_ADDR}" ]; then
+  DB_TYPE=mysql
+  DB_HOST=${DB_HOST:-${MYSQL_PORT_3306_TCP_ADDR}}
+  DB_PORT=${DB_PORT:-${MYSQL_PORT_3306_TCP_PORT}}
+
+  # support for linked sameersbn/mysql image
+  DB_USER=${DB_USER:-${MYSQL_ENV_DB_USER}}
+  DB_PASS=${DB_PASS:-${MYSQL_ENV_DB_PASS}}
+  DB_NAME=${DB_NAME:-${MYSQL_ENV_DB_NAME}}
+
+  # support for linked orchardup/mysql and centurylink/mysql image
+  DB_USER=${DB_USER:-${MYSQL_ENV_MYSQL_USER}}
+  DB_PASS=${DB_PASS:-${MYSQL_ENV_MYSQL_PASSWORD}}
+  DB_NAME=${DB_NAME:-${MYSQL_ENV_MYSQL_DATABASE}}
+elif [ -n "${POSTGRESQL_PORT_5432_TCP_ADDR}" ]; then
+  DB_TYPE=postgres
+  DB_HOST=${DB_HOST:-${POSTGRESQL_PORT_5432_TCP_ADDR}}
+  DB_PORT=${DB_PORT:-${POSTGRESQL_PORT_5432_TCP_PORT}}
+
+  # support for linked official postgres image
+  DB_USER=${DB_USER:-${POSTGRESQL_ENV_POSTGRES_USER}}
+  DB_PASS=${DB_PASS:-${POSTGRESQL_ENV_POSTGRES_PASS}}
+  DB_NAME=${DB_NAME:-${DB_USER}}
+
+  # support for linked sameersbn/postgresql image
+  DB_USER=${DB_USER:-${POSTGRESQL_ENV_DB_USER}}
+  DB_PASS=${DB_PASS:-${POSTGRESQL_ENV_DB_PASS}}
+  DB_NAME=${DB_NAME:-${POSTGRESQL_ENV_DB_NAME}}
+
+  # support for linked orchardup/postgresql image
+  DB_USER=${DB_USER:-${POSTGRESQL_ENV_POSTGRESQL_USER}}
+  DB_PASS=${DB_PASS:-${POSTGRESQL_ENV_POSTGRESQL_PASS}}
+  DB_NAME=${DB_NAME:-${POSTGRESQL_ENV_POSTGRESQL_DB}}
+
+  # support for linked paintedfox/postgresql image
+  DB_USER=${DB_USER:-${POSTGRESQL_ENV_USER}}
+  DB_PASS=${DB_PASS:-${POSTGRESQL_ENV_PASS}}
+  DB_NAME=${DB_NAME:-${POSTGRESQL_ENV_DB}}
+fi
+
+##
+## For the sake of getting the quick start guide to work,
+## we attempt to spin up a postgresql container if possible.
+##
+## NOTE: this is only meant for getting the quick start guide to work .
+##
+if [ -z "${DB_HOST}" -a -n "$(which docker)" -a -S /var/run/docker.sock ]; then
+  echo "Database connection details not specified."
+  echo "Will try to spin up a new postgresql image with the name postgresql-gogs."
+  echo "Please manually configure the database connection in production."
+  case "$(docker inspect --format {{.State.Running}} postgresql-gogs)" in
+    true)
+      echo "Using existing postgresql container..."
+      ;;
+    false)
+      echo "Starting up existing postgresql container..."
+      docker start postgresql-gogs >/dev/null
+      ;;
+    *)
+      echo "Starting up a new postgresql container..."
+      docker run --name='postgresql-gogs' -d \
+        -e 'DB_USER=gogs' -e 'DB_PASS=password' -e 'DB_NAME=gogs_production' \
+        sameersbn/postgresql:latest >/dev/null
+      ;;
+  esac
+  DB_TYPE=postgres
+  DB_HOST=$(docker inspect --format {{.NetworkSettings.IPAddress}} postgresql-gogs)
+  DB_PORT=5432
+  DB_USER=gogs
+  DB_PASS=password
+  DB_NAME=gogs_production
+fi
+
+if [ -z "${DB_HOST}" ]; then
+  echo "ERROR: "
+  echo "  No database host specified."
+  echo "  Please configure the database connection."
+  echo "  Cannot continue without a database. Aborting..."
+  exit 1
+fi
+
+# use default port number if it is still not set
+case "${DB_TYPE}" in
+  mysql) DB_PORT=${DB_PORT:-3306} ;;
+  postgres) DB_PORT=${DB_PORT:-5432} ;;
+  *)
+    echo "ERROR: "
+    echo "  Please specify the database type in use via the DB_TYPE configuration option."
+    echo "  Accepted values are \"postgres\" or \"mysql\". Aborting..."
+    exit 1
+    ;;
+esac
+
+# set the default user and database
+DB_NAME=${DB_NAME:-gogs_production}
+DB_USER=${DB_USER:-root}
+
+# create the .ssh directory
+mkdir -p ${DATA_DIR}/dotfiles/.ssh/
+chown -R gogs:gogs ${DATA_DIR}/dotfiles/.ssh/
+
+# generate ssh keys
+if [ ! -e ${DATA_DIR}/dotfiles/.ssh/id_rsa -o ! -e ${DATA_DIR}/dotfiles/.ssh/id_rsa.pub ]; then
+  echo "Generating SSH keys..."
+  rm -rf ${DATA_DIR}/dotfiles/.ssh/id_rsa ${DATA_DIR}/dotfiles/.ssh/id_rsa.pub
+  sudo -u gogs -H ssh-keygen -t rsa -N "" -f ${DATA_DIR}/dotfiles/.ssh/id_rsa
+fi
+
+# make sure the ssh keys have the right ownership and permissions
+chmod 600 ${DATA_DIR}/dotfiles/.ssh/id_rsa ${DATA_DIR}/dotfiles/.ssh/id_rsa.pub
+chmod 700 ${DATA_DIR}/dotfiles/.ssh
+
+# fix ownership of the ${DATA_DIR}dotfiles/ directory
+chown -R gogs:gogs ${DATA_DIR}/dotfiles
+
+# populate ${LOG_DIR}
+mkdir -m 0755 -p ${LOG_DIR}/supervisor  && chown -R root:root ${LOG_DIR}/supervisor
+mkdir -m 0755 -p ${LOG_DIR}/gogs    && chown -R gogs:gogs ${LOG_DIR}/gogs
+
+# Populate required gogs directories
+mkdir -p ${INSTALL_DIR}/custom/conf
+mkdir -p ${DATA_DIR}/gogs/data
+mkdir -p ${GIT_REPO}
+
+# Fix permissions
+chown -R gogs:gogs ${DATA_DIR}
+chmod 755 ${DATA_DIR} -R
+chown -R gogs:gogs ${GIT_REPO}
+chmod 755 ${GIT_REPO}
+chown -R gogs:gogs ${INSTALL_DIR}/custom/conf
+chmod 755 ${INSTALL_DIR}/custom/conf
+
+# set executable flags on ${DATA_DIR} (needed if mounted from a data-only
+# container using --volumes-from)
+chmod +x ${DATA_DIR}
+
+cd ${INSTALL_DIR}
+
+# gogs configuration
+sudo -u gogs -H cp ${SYSCONF_TEMPLATES_DIR}/gogs/app.ini custom/conf/app.ini
+[ -f ${USERCONF_TEMPLATES_DIR}/gogs/app.ini] && sudo -u gogs -H cp ${USERCONF_TEMPLATES_DIR}/gogs/app.ini custom/conf/app.ini
+
+sudo -u gogs -H sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/' -i custom/conf/app.ini
+sudo -u gogs -H sed 's/{{DB_HOST}}/'"${DB_HOST}"'/' -i custom/conf/app.ini
+sudo -u gogs -H sed 's/{{DB_PORT}}/'"${DB_PORT}"'/' -i custom/conf/app.ini
+sudo -u gogs -H sed 's/{{DB_NAME}}/'"${DB_NAME}"'/' -i custom/conf/app.ini
+sudo -u gogs -H sed 's/{{DB_USER}}/'"${DB_USER}"'/' -i custom/conf/app.ini
+sudo -u gogs -H sed 's/{{DB_PASS}}/'"${DB_PASS}"'/' -i custom/conf/app.ini
+
+sudo -u gogs -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i custom/conf/app.ini
+sudo -u gogs -H sed 's,{{GIT_REPO}},'"${GIT_REPO}"',g' -i custom/conf/app.ini
+sudo -u gogs -H sed 's/{{DOMAIN}}/'"${GOGS_DOMAIN}"'/' -i custom/conf/app.ini
+
+
+# TODO: Handle templates
+# Copy over the templates, if no templates are found
+#test -d ${DATA_DIR}/templates || cp -ar ./templates ${DATA_DIR}
+# Sync template folders
+#rsync -rtv ${DATA_DIR}/templates ./templates/
+
+# TODO: Configure SMTP
+
+# due to the nature of docker and its use cases, we allow some time
+# for the database server to come online.
+case "${DB_TYPE}" in
+  mysql)
+    prog="mysqladmin -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} ${DB_PASS:+-p$DB_PASS} status"
+    ;;
+  postgres)
+    prog=$(find /usr/lib/postgresql/ -name pg_isready)
+    prog="${prog} -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -t 1"
+    ;;
+esac
+
+timeout=60
+echo -n "Waiting for database server to accept connections"
+while ! ${prog} >/dev/null 2>&1
+do
+  timeout=$(expr $timeout - 1)
+  if [ $timeout -eq 0 ]; then
+    echo -e "\nCould not connect to database server. Aborting..."
+    exit 1
+  fi
+  echo -n "."
+  sleep 1
+done
+echo
+
+
+appStart () {
+  # start supervisord
+  exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+}
+
+appHelp () {
+  echo "Available options:"
+  echo " app:start          - Starts the gogs server (default)"
+  echo " app:help           - Displays the help"
+  echo " [command]          - Execute the specified linux command eg. bash."
+}
+
+case "$1" in
+  app:start)
+    appStart
+    ;;
+  app:help)
+    appHelp
+    ;;
+  *)
+    if [ -x $1 ]; then
+      $1
+    else
+      prog=$(which $1)
+      if [ -n "${prog}" ] ; then
+        shift 1
+        $prog $@
+      else
+        appHelp
+      fi
+    fi
+    ;;
+esac
+
+exit 0
+

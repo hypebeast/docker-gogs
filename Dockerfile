@@ -3,25 +3,23 @@ MAINTAINER sebastian.ruml@gmail.com
 
 # Install packages
 RUN apt-get update && \
-    apt-get -y install wget git rsync unzip
+    apt-get -y install wget git rsync unzip supervisor logrotate  \
+        postgresql-client openssh-client
 
-# Install Gogs
 ADD assets/setup/ /app/setup/
-RUN chmod 755 /app/setup/install.sh
-RUN /app/setup/install.sh
+RUN chmod 755 /app/setup/install
+RUN /app/setup/install
 
-# Add Gogs config and run.sh script
 ADD assets/config/ /app/setup/config/
-ADD assets/run.sh /app/run.sh
-RUN chmod 755 /app/run.sh
-
-# Expose ENV
-ENV GOGS_CUSTOM /data/gogs
+ADD assets/init /app/init
+RUN chmod 755 /app/init
 
 # Expose ports
 EXPOSE 3000
 
 # Add VOLUMESs to allow backup and customization of config
-VOLUME ["/data"]
+VOLUME ["/home/owncloud/data"]
+VOLUME ["/var/log/owncloud"]
 
-CMD ["/app/run.sh"]
+ENTRYPOINT ["/app/init"]
+CMD ["app:start"]
