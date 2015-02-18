@@ -77,13 +77,33 @@ cat > /etc/supervisor/conf.d/gogs.conf <<EOF
 [program:gogs]
 priority=20
 directory=${INSTALL_DIR}
-command=${INSTALL_DIR}/gogs web
+command=${INSTALL_DIR}/start.sh
 user=gogs
 autostart=true
 autorestart=true
+startretries=10
+startsecs=5
+redirect_stderr=true
 stdout_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
 stderr_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
 EOF
+
+# start script for gogs
+cat > ${INSTALL_DIR}/start.sh <<EOF
+#!/bin/bash
+
+IFS='
+        '
+PATH=/bin:/usr/bin:/usr/local/bin
+USER=gogs
+HOME=/home/gogs
+export USER HOME PATH
+
+cd "${INSTALL_DIR}" && exec ./gogs web
+EOF
+
+chown gogs:gogs ${INSTALL_DIR}/start.sh
+chmod a+x ${INSTALL_DIR}/start.sh
 
 # cleanup
 rm -rf /var/lib/apt/lists/*
