@@ -18,8 +18,8 @@ RUN chmod 755 /app/init
 EXPOSE 3000
 
 # Add VOLUMESs to allow backup and customization of config
-VOLUME ["/home/owncloud/data"]
-VOLUME ["/var/log/owncloud"]
+VOLUME ["/home/gogs/data"]
+VOLUME ["/var/log/gogs"]
 
 ENTRYPOINT ["/app/init"]
 CMD ["app:start"]
