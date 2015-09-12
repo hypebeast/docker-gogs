@@ -2,11 +2,12 @@
 
 INSTALL_DIR="/home/gogs/gogs"
 DATA_DIR="/home/gogs/data"
-LOG_DIR="/var/log/gogs"
+LOG_DIR="/home/gogs/data/log"
+# LOG_DIR="/var/log/gogs"
 
 SETUP_DIR="/app/setup"
-SYSCONF_TEMPLATES_DIR="${SETUP_DIR}/config"
-USERCONF_TEMPLATES_DIR="${DATA_DIR}/config"
+SETUP_CONFIG_DIR="${SETUP_DIR}/config"
+#USERCONF_TEMPLATES_DIR="${DATA_DIR}/config"
 
 DB_HOST=${DB_HOST:-}
 DB_PORT=${DB_PORT:-}
@@ -14,10 +15,16 @@ DB_NAME=${DB_NAME:-}
 DB_USER=${DB_USER:-}
 DB_PASS=${DB_PASS:-}
 DB_TYPE=${DB_TYPE:-mysql}
+DB_PATH=${DB_PATH:-}
+DB_SSL_MODE=${DB_SSL_MODE:-disable}
 
 GOGS_PORT=${GOGS_PORT:-3000}
 GOGS_DOMAIN=${GOGS_DOMAIN:-localhost}
-GIT_REPO="${DATA_DIR}/git"
+GOGS_GIT_DIR="${DATA_DIR}/git"
+GOGS_DATA_DIR="${DATA_DIR}/gogs"
+GOGS_CUSTOM="${DATA_DIR}/gogs/custom"
+GOGS_CUSTOM_CONF="${DATA_DIR}/gogs/custom/conf"
+GOGS_SECRET_KEY="${GOGS_SECRET_KEY:-uz8732678euhjdshfjkh}"
 
 # is a mysql or postgresql database linked?
 # requires that the mysql or postgresql containers have exposed
@@ -95,18 +102,26 @@ if [ -z "${DB_HOST}" -a -n "$(which docker)" -a -S /var/run/docker.sock ]; then
   DB_NAME=gogs_production
 fi
 
+# check if a database is specified and exit if no database is specified
 if [ -z "${DB_HOST}" ]; then
-  echo "ERROR: "
-  echo "  No database host specified."
-  echo "  Please configure the database connection."
-  echo "  Cannot continue without a database. Aborting..."
-  exit 1
+  echo "Database connection details not specified."
+  echo "  Using sqlite database"
+  echo "  Do not use it in production"
+
+  DB_TYPE="sqlite3"
+  DB_HOST="127.0.0.1:3306"
+  DB_PORT="3306"
+  DB_USER="root"
+  DB_PASS=""
+  DB_NAME="gogs_production"
+  DB_PATH="data/gogs.db"
 fi
 
 # use default port number if it is still not set
 case "${DB_TYPE}" in
   mysql) DB_PORT=${DB_PORT:-3306} ;;
   postgres) DB_PORT=${DB_PORT:-5432} ;;
+  sqlite3) ;;
   *)
     echo "ERROR: "
     echo "  Please specify the database type in use via the DB_TYPE configuration option."
@@ -120,39 +135,39 @@ DB_NAME=${DB_NAME:-gogs_production}
 DB_USER=${DB_USER:-root}
 
 # create the .ssh directory
-mkdir -p ${DATA_DIR}/dotfiles/.ssh/
-chown -R gogs:gogs ${DATA_DIR}/dotfiles/.ssh/
+mkdir -p ${DATA_DIR}/ssh/
+chown -R gogs:gogs ${DATA_DIR}/ssh
 
 # generate ssh keys
-if [ ! -e ${DATA_DIR}/dotfiles/.ssh/id_rsa -o ! -e ${DATA_DIR}/dotfiles/.ssh/id_rsa.pub ]; then
+if [ ! -e ${DATA_DIR}/ssh/id_rsa -o ! -e ${DATA_DIR}/ssh/id_rsa.pub ]; then
   echo "Generating SSH keys..."
-  rm -rf ${DATA_DIR}/dotfiles/.ssh/id_rsa ${DATA_DIR}/dotfiles/.ssh/id_rsa.pub
-  sudo -u gogs -H ssh-keygen -t rsa -N "" -f ${DATA_DIR}/dotfiles/.ssh/id_rsa
+  rm -rf ${DATA_DIR}/ssh/id_rsa ${DATA_DIR}/ssh/id_rsa.pub
+  sudo -u gogs -H ssh-keygen -t rsa -N "" -f ${DATA_DIR}/ssh/id_rsa
 fi
 
 # make sure the ssh keys have the right ownership and permissions
-chmod 600 ${DATA_DIR}/dotfiles/.ssh/id_rsa ${DATA_DIR}/dotfiles/.ssh/id_rsa.pub
-chmod 700 ${DATA_DIR}/dotfiles/.ssh
+chmod 600 ${DATA_DIR}/ssh/id_rsa ${DATA_DIR}/ssh/id_rsa.pub
+chmod 700 ${DATA_DIR}/ssh
 
-# fix ownership of the ${DATA_DIR}dotfiles/ directory
-chown -R gogs:gogs ${DATA_DIR}/dotfiles
+# fix ownership of the ssh directory
+chown -R gogs:gogs ${DATA_DIR}/ssh
 
 # populate ${LOG_DIR}
 mkdir -m 0755 -p ${LOG_DIR}/supervisor  && chown -R root:root ${LOG_DIR}/supervisor
 mkdir -m 0755 -p ${LOG_DIR}/gogs    && chown -R gogs:gogs ${LOG_DIR}/gogs
 
 # Populate required gogs directories
-mkdir -p ${INSTALL_DIR}/custom/conf
-mkdir -p ${DATA_DIR}/gogs/data
-mkdir -p ${GIT_REPO}
+mkdir -p ${GOGS_CUSTOM_CONF}
+mkdir -p ${GOGS_DATA_DIR}/data
+mkdir -p ${GOGS_GIT_DIR}
 
 # Fix permissions
-chown -R gogs:gogs ${DATA_DIR}
-chmod 755 ${DATA_DIR} -R
-chown -R gogs:gogs ${GIT_REPO}
-chmod 755 ${GIT_REPO}
-chown -R gogs:gogs ${INSTALL_DIR}/custom/conf
-chmod 755 ${INSTALL_DIR}/custom/conf
+chown -R gogs:gogs ${GOGS_DATA_DIR}
+chmod 755 ${GOGS_DATA_DIR}
+chown -R gogs:gogs ${GOGS_GIT_DIR}
+chmod 755 ${GOGS_GIT_DIR}
+# chown -R gogs:gogs ${GOGS_CUSTOM_CONF}
+# chmod 755 ${GOGS_CUSTOM_CONF}
 
 # set executable flags on ${DATA_DIR} (needed if mounted from a data-only
 # container using --volumes-from)
@@ -161,20 +176,24 @@ chmod +x ${DATA_DIR}
 cd ${INSTALL_DIR}
 
 # gogs configuration
-sudo -u gogs -H cp ${SYSCONF_TEMPLATES_DIR}/gogs/app.ini custom/conf/app.ini
-[ -f ${USERCONF_TEMPLATES_DIR}/gogs/app.ini] && sudo -u gogs -H cp ${USERCONF_TEMPLATES_DIR}/gogs/app.ini custom/conf/app.ini
+if [ ! -e ${GOGS_CUSTOM_CONF}/app.ini ]; then
+  sudo -u gogs -H cp ${SETUP_CONFIG_DIR}/gogs/app.ini ${GOGS_CUSTOM_CONF}/app.ini
+  # [ -f ${USERCONF_TEMPLATES_DIR}/gogs/app.ini] && sudo -u gogs -H cp ${USERCONF_TEMPLATES_DIR}/gogs/app.ini ${GOGS_CUSTOM_CONF}/app.ini
 
-sudo -u gogs -H sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/' -i custom/conf/app.ini
-sudo -u gogs -H sed 's/{{DB_HOST}}/'"${DB_HOST}"'/' -i custom/conf/app.ini
-sudo -u gogs -H sed 's/{{DB_PORT}}/'"${DB_PORT}"'/' -i custom/conf/app.ini
-sudo -u gogs -H sed 's/{{DB_NAME}}/'"${DB_NAME}"'/' -i custom/conf/app.ini
-sudo -u gogs -H sed 's/{{DB_USER}}/'"${DB_USER}"'/' -i custom/conf/app.ini
-sudo -u gogs -H sed 's/{{DB_PASS}}/'"${DB_PASS}"'/' -i custom/conf/app.ini
+  sudo -u gogs -H sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{DB_HOST}}/'"${DB_HOST}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{DB_PORT}}/'"${DB_PORT}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{DB_NAME}}/'"${DB_NAME}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{DB_USER}}/'"${DB_USER}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{DB_PASS}}/'"${DB_PASS}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{DB_SSL_MODE}}/'"${DB_SSL_MODE}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{DB_PATH}}/'"${DB_PATH}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
 
-sudo -u gogs -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i custom/conf/app.ini
-sudo -u gogs -H sed 's,{{GIT_REPO}},'"${GIT_REPO}"',g' -i custom/conf/app.ini
-sudo -u gogs -H sed 's/{{DOMAIN}}/'"${GOGS_DOMAIN}"'/' -i custom/conf/app.ini
-
+  sudo -u gogs -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's,{{GOGS_GIT_DIR}},'"${GIT_REPO}"',g' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{DOMAIN}}/'"${GOGS_DOMAIN}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's/{{SECRET_KEY}}/'"${GOGS_SECRET_KEY}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
+fi
 
 # TODO: Handle templates
 # Copy over the templates, if no templates are found
@@ -196,20 +215,22 @@ case "${DB_TYPE}" in
     ;;
 esac
 
-timeout=60
-echo -n "Waiting for database server to accept connections"
-while ! ${prog} >/dev/null 2>&1
-do
-  timeout=$(expr $timeout - 1)
-  if [ $timeout -eq 0 ]; then
-    echo -e "\nCould not connect to database server. Aborting..."
-    exit 1
-  fi
-  echo -n "."
-  sleep 1
-done
-echo
-
+case "${DB_TYPE}" in
+  "mysql" | "postgres")
+    timeout=60
+    echo -n "Waiting for database server to accept connections"
+    while ! ${prog} >/dev/null 2>&1
+    do
+      timeout=$(expr $timeout - 1)
+      if [ $timeout -eq 0 ]; then
+        echo -e "\nCould not connect to database server. Aborting..."
+        exit 1
+      fi
+      echo -n "."
+      sleep 1
+    done
+    echo
+esac
 
 appStart () {
   # start supervisord

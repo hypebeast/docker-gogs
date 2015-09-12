@@ -1,10 +1,16 @@
 #!/bin/bash
 
-GOGS_VERSION="v0.5.13"
-INSTALL_DIR="/home/gogs/gogs"
+###############################################################################
+# Installation script for gogs.
+#
+# This script is executed during the build of the docker image.
+###############################################################################
 
+GOGS_VERSION="v0.6.9"
+
+INSTALL_DIR="/home/gogs/gogs"
 DATA_DIR="/home/gogs/data"
-LOG_DIR="/var/log/gogs"
+LOG_DIR="/home/gogs/data/log"
 SETUP_DIR="/app/setup"
 
 # add gogs user
@@ -15,9 +21,13 @@ passwd -d gogs
 adduser --disabled-login --gecos 'gogsgit' git
 passwd -d git
 
+##
+# TODO: ssh setup
+##
+
 # create symlink to ${DATA_DIR}/dotfiles/.ssh
 rm -rf /home/gogs/.ssh
-sudo -u gogs -H ln -s ${DATA_DIR}/dotfiles/.ssh /home/gogs/.ssh
+sudo -u gogs -H ln -s ${DATA_DIR}/ssh /home/gogs/.ssh
 
 # Install gogs, use local copy if available
 mkdir -p /home/gogs ${LOG_DIR}
@@ -34,17 +44,16 @@ fi
 chown -R gogs:gogs ${INSTALL_DIR}
 chmod 755 ${INSTALL_DIR}
 chmod a+x ${INSTALL_DIR}/gogs
-chown -R gogs:gogs ${LOG_DIR}
-chmod 755 ${LOG_DIR}
 
 # move supervisord.log file to ${LOG_DIR}/supervisor/
 sed 's|^logfile=.*|logfile='"${LOG_DIR}"'/supervisor/supervisord.log ;|' -i /etc/supervisor/supervisord.conf
 
 cd ${INSTALL_DIR}
-rm -rf ./log ./data
+rm -rf ./log ./data ./custom
 
-ln -sf ${LOG_DIR} ./log
+ln -sf ${LOG_DIR}/gogs ./log
 ln -sf ${DATA_DIR}/gogs/data ./data
+ln -sf ${DATA_DIR}/gogs/custom ./custom
 
 # setup log rotation for gogs application logs
 cat > /etc/logrotate.d/gogs <<EOF
@@ -87,6 +96,8 @@ redirect_stderr=true
 stdout_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
 stderr_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
 EOF
+
+echo "export GOGS_CUSTOM=${DATA_DIR}/gogs/custom" >> /home/gogs/.bashrc
 
 # start script for gogs
 cat > ${INSTALL_DIR}/start.sh <<EOF
