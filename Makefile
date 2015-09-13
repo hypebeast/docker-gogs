@@ -23,7 +23,7 @@ quickstart:
 		-v $(shell which docker):/bin/docker \
 		${USER}/gogs:latest >/dev/null
 	@echo "Please be patient. This could take a while..."
-	@echo "gogs will be available at http://localhost:/custom"
+	@echo "gogs will be available at http://localhost:10030"
 	@echo "Type 'make logs' for the logs"
 
 demo:
@@ -31,7 +31,7 @@ demo:
 	@docker run --name=gogs-demo -d -p 10030:3000 \
 		${USER}/gogs:latest >/dev/null
 	@echo "Please be patient. This could take a while..."
-	@echo "gogs will be available at http://localhost:/custom"
+	@echo "gogs will be available at http://localhost:10030"
 	@echo "Type 'make logs' for the logs"
 
 stop:

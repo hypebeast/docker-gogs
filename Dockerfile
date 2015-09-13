@@ -4,7 +4,7 @@ MAINTAINER sebastian.ruml@gmail.com
 # Install packages
 RUN apt-get update && \
     apt-get -y install wget git rsync unzip supervisor logrotate  \
-        postgresql-client openssh-client
+        postgresql-client openssh-client mysql-client
 
 ADD assets/setup/ /app/setup/
 RUN chmod 755 /app/setup/install
@@ -23,7 +23,6 @@ ENV DATA_DIR /home/gogs/data
 ENV LOG_DIR /home/gogs/data/log
 ENV GOGS_DATA_DIR /home/gogs/data/gogs
 
-# TODO: Ist das richtig ?????????
 ENV GOGS_CUSTOM /home/gogs/data/gogs/custom
 RUN echo "export GOGS_CUSTOM=/home/gogs/data/gogs/custom" >> /etc/profile
 
@@ -32,7 +31,6 @@ EXPOSE 22 3000
 
 # Add VOLUMESs to allow backup and customization of config
 VOLUME ["/home/gogs/data"]
-# VOLUME ["/var/log/gogs"]
 
 ENTRYPOINT ["/app/init"]
 CMD ["app:start"]

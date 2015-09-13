@@ -26,8 +26,9 @@ passwd -d git
 ##
 
 # create symlink to ${DATA_DIR}/dotfiles/.ssh
-rm -rf /home/gogs/.ssh
+rm -rf /home/gogs/.ssh /home/git/.ssh
 sudo -u gogs -H ln -s ${DATA_DIR}/ssh /home/gogs/.ssh
+sudo -u git -H ln -s ${DATA_DIR}/ssh /home/git/.ssh
 
 # Install gogs, use local copy if available
 mkdir -p /home/gogs
@@ -48,6 +49,7 @@ chmod a+x ${INSTALL_DIR}/gogs
 # move supervisord.log file to ${LOG_DIR}/supervisor/
 sed 's|^logfile=.*|logfile='"${LOG_DIR}"'/supervisor/supervisord.log ;|' -i /etc/supervisor/supervisord.conf
 
+# link gogs directories
 cd ${INSTALL_DIR}
 rm -rf ./log ./data ./custom
 
@@ -97,6 +99,7 @@ stdout_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
 stderr_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
 EOF
 
+# export Gogs custom config dir
 echo "export GOGS_CUSTOM=${DATA_DIR}/gogs/custom" >> /home/gogs/.bashrc
 
 # start script for gogs
