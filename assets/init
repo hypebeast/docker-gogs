@@ -108,7 +108,7 @@ if [ -z "${DB_HOST}" ]; then
   echo "  Do not use it in production."
 
   DB_TYPE="sqlite3"
-  DB_HOST="127.0.0.1:3306"
+  DB_HOST="127.0.0.1"
   DB_PORT="3306"
   DB_USER="root"
   DB_PASS=""
@@ -173,7 +173,7 @@ if [ ! -e ${GOGS_CUSTOM_CONF_DIR}/app.ini ]; then
   sudo -u gogs -H cp ${SETUP_CONFIG_DIR}/gogs/app.ini ${GOGS_CUSTOM_CONF_DIR}/app.ini
 
   sudo -u gogs -H sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{DB_HOST}}/'"${DB_HOST}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+  sudo -u gogs -H sed 's/{{DB_HOST}}/'"${DB_HOST}"':'"${DB_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
   sudo -u gogs -H sed 's/{{DB_PORT}}/'"${DB_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
   sudo -u gogs -H sed 's/{{DB_NAME}}/'"${DB_NAME}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
   sudo -u gogs -H sed 's/{{DB_USER}}/'"${DB_USER}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
