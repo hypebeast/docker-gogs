@@ -9,8 +9,9 @@ help:
 	@echo "   3. make demo        - start gogs with sqlite database"
 	@echo "   4. make stop        - stop gogs"
 	@echo "   5. make logs        - view logs"
-	@echo "   5. make purge       - stop and remove the container"
-	@echo "   5. make shell       - run an interactive shell"
+	@echo "   6. make purge       - stop and remove the container"
+	@echo "   7. make shell       - run an interactive shell"
+	@echo "   8. make debug       - connect to the running demo container and run an interactive shell"
 
 build:
 	@docker build --tag=${USER}/gogs .

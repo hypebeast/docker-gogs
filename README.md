@@ -6,11 +6,7 @@ Docker image to run [Gogs](http://gogs.io).
 
 TODO
 
-## Installation
-
-TODO
-
-## Run
+## Usage
 
 TODO
 
@@ -27,6 +23,10 @@ TODO
 TODO: Add support for env vars
 
 see => https://github.com/fabric8io/docker-gogs
+
+## Settings
+
+TODO
 
 ## Directories
 

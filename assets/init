@@ -105,8 +105,8 @@ fi
 # check if a database is specified and exit if no database is specified
 if [ -z "${DB_HOST}" ]; then
   echo "Database connection details not specified."
-  echo "  Using sqlite database"
-  echo "  Do not use it in production"
+  echo "  Using sqlite database."
+  echo "  Do not use it in production."
 
   DB_TYPE="sqlite3"
   DB_HOST="127.0.0.1:3306"
@@ -134,9 +134,24 @@ esac
 DB_NAME=${DB_NAME:-gogs_production}
 DB_USER=${DB_USER:-root}
 
-# create the .ssh directory
-mkdir -p ${DATA_DIR}/ssh/
-chown -R gogs:gogs ${DATA_DIR}/ssh
+# populate dirs
+# if [ ! -d ${DATA_DIR} ]; then
+  mkdir -p ${LOG_DIR} ${GOGS_CUSTOM_CONF} ${GOGS_DATA_DIR}/data ${GOGS_GIT_DIR}
+
+  # Fix permissions
+  chown -R gogs:gogs ${GOGS_DATA_DIR}
+  chmod 755 ${GOGS_DATA_DIR}
+  chown -R gogs:gogs ${GOGS_GIT_DIR}
+  chmod 755 ${GOGS_GIT_DIR}
+
+  # populate ${LOG_DIR}
+  mkdir -m 0755 -p ${LOG_DIR}/supervisor  && chown -R root:root ${LOG_DIR}/supervisor
+  mkdir -m 0755 -p ${LOG_DIR}/gogs        && chown -R gogs:gogs ${LOG_DIR}/gogs
+
+  # create the .ssh directory
+  mkdir -p ${DATA_DIR}/ssh/
+  chown -R gogs:gogs ${DATA_DIR}/ssh
+# fi
 
 # generate ssh keys
 if [ ! -e ${DATA_DIR}/ssh/id_rsa -o ! -e ${DATA_DIR}/ssh/id_rsa.pub ]; then
@@ -148,30 +163,6 @@ fi
 # make sure the ssh keys have the right ownership and permissions
 chmod 600 ${DATA_DIR}/ssh/id_rsa ${DATA_DIR}/ssh/id_rsa.pub
 chmod 700 ${DATA_DIR}/ssh
-
-# fix ownership of the ssh directory
-chown -R gogs:gogs ${DATA_DIR}/ssh
-
-# populate ${LOG_DIR}
-mkdir -m 0755 -p ${LOG_DIR}/supervisor  && chown -R root:root ${LOG_DIR}/supervisor
-mkdir -m 0755 -p ${LOG_DIR}/gogs    && chown -R gogs:gogs ${LOG_DIR}/gogs
-
-# Populate required gogs directories
-mkdir -p ${GOGS_CUSTOM_CONF}
-mkdir -p ${GOGS_DATA_DIR}/data
-mkdir -p ${GOGS_GIT_DIR}
-
-# Fix permissions
-chown -R gogs:gogs ${GOGS_DATA_DIR}
-chmod 755 ${GOGS_DATA_DIR}
-chown -R gogs:gogs ${GOGS_GIT_DIR}
-chmod 755 ${GOGS_GIT_DIR}
-# chown -R gogs:gogs ${GOGS_CUSTOM_CONF}
-# chmod 755 ${GOGS_CUSTOM_CONF}
-
-# set executable flags on ${DATA_DIR} (needed if mounted from a data-only
-# container using --volumes-from)
-chmod +x ${DATA_DIR}
 
 cd ${INSTALL_DIR}
 
@@ -190,7 +181,7 @@ if [ ! -e ${GOGS_CUSTOM_CONF}/app.ini ]; then
   sudo -u gogs -H sed 's/{{DB_PATH}}/'"${DB_PATH}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
 
   sudo -u gogs -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
-  sudo -u gogs -H sed 's,{{GOGS_GIT_DIR}},'"${GIT_REPO}"',g' -i ${GOGS_CUSTOM_CONF}/app.ini
+  sudo -u gogs -H sed 's,{{GOGS_GIT_DIR}},'"${GIT_REPO}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
   sudo -u gogs -H sed 's/{{DOMAIN}}/'"${GOGS_DOMAIN}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
   sudo -u gogs -H sed 's/{{SECRET_KEY}}/'"${GOGS_SECRET_KEY}"'/' -i ${GOGS_CUSTOM_CONF}/app.ini
 fi

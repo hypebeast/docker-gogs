@@ -30,7 +30,7 @@ rm -rf /home/gogs/.ssh
 sudo -u gogs -H ln -s ${DATA_DIR}/ssh /home/gogs/.ssh
 
 # Install gogs, use local copy if available
-mkdir -p /home/gogs ${LOG_DIR}
+mkdir -p /home/gogs
 
 if [ -f ${SETUP_DIR}/gogs-${GOGS_VERSION}.tar.bz2 ]
 then
@@ -88,11 +88,11 @@ priority=20
 directory=${INSTALL_DIR}
 command=${INSTALL_DIR}/start.sh
 user=gogs
+environment = HOME="/home/gogs", USER="gogs"
 autostart=true
 autorestart=true
 startretries=10
-startsecs=5
-redirect_stderr=true
+startsecs=10
 stdout_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
 stderr_logfile=${LOG_DIR}/supervisor/%(program_name)s.log
 EOF
