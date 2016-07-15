@@ -1,6 +1,11 @@
 FROM ubuntu:trusty
 MAINTAINER sebastian.ruml@gmail.com
 
+ENV GOGS_VERSION v0.9.13
+ENV INSTALL_DIR /home/gogs/gogs
+ENV DATA_DIR /home/gogs/data
+ENV LOG_DIR /home/gogs/data/log
+
 # Install packages
 RUN apt-get update && \
     apt-get -y install wget git rsync unzip supervisor logrotate  \
@@ -16,12 +21,6 @@ RUN chmod 755 /app/init
 
 # env vars
 ENV SETUP_DIR /app/setup
-
-ENV GOGS_VERSION v0.6.9
-ENV INSTALL_DIR /home/gogs/gogs
-ENV DATA_DIR /home/gogs/data
-ENV LOG_DIR /home/gogs/data/log
-ENV GOGS_DATA_DIR /home/gogs/data/gogs
 
 ENV GOGS_CUSTOM /home/gogs/data/gogs/custom
 RUN echo "export GOGS_CUSTOM=/home/gogs/data/gogs/custom" >> /etc/profile

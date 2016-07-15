@@ -1,8 +1,8 @@
 #!/bin/bash
 
-INSTALL_DIR="/home/gogs/gogs"
-DATA_DIR="/home/gogs/data"
-LOG_DIR="/home/gogs/data/log"
+INSTALL_DIR=${INSTALL_DIR:-/home/gogs/gogs}
+DATA_DIR=${DATA_DIR:-/home/gogs/data}
+LOG_DIR=${LOG_DIR:-/home/gogs/data/log}
 
 SETUP_DIR="/app/setup"
 SETUP_CONFIG_DIR="${SETUP_DIR}/config"
@@ -18,13 +18,21 @@ DB_SSL_MODE=${DB_SSL_MODE:-disable}
 
 GOGS_PORT=${GOGS_PORT:-3000}
 GOGS_DOMAIN=${GOGS_DOMAIN:-localhost}
+GOGS_INSTALL_LOCK=${GOGS_INSTALL_LOCK:-true}
+GOGS_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
+GOGS_DISABLE_REGISTRATION=${GOGS_DISABLE_REGISTRATION:-false}
+
+MAILER_ENABLED=${MAILER_ENABLED:false}
+MAILER_HOST=${MAILER_HOST:-}
+MAILER_FROM=${MAILER_FROM:-}
+MAILER_USER=${MAILER_USER:-}
+MAILER_PASS=${MAILER_PASS_:-}
+
+# Gogs folders
 GOGS_GIT_DIR=${DATA_DIR}/git
 GOGS_DATA_DIR=${DATA_DIR}/gogs
 GOGS_CUSTOM_DIR=${DATA_DIR}/gogs/custom
 GOGS_CUSTOM_CONF_DIR=${DATA_DIR}/gogs/custom/conf
-GOGS_INSTALL_LOCK=${GOGS_INSTALL_LOCK:-true}
-GOGS_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
-GOGS_DISABLE_REGISTRATION=${GOGS_DISABLE_REGISTRATION:-false}
 
 # is a mysql or postgresql database linked?
 # port 3306 and 5432 respectively.
@@ -167,35 +175,39 @@ chmod 700 ${DATA_DIR}/ssh
 
 cd ${INSTALL_DIR}
 
+####
 # gogs configuration
-if [ ! -e ${GOGS_CUSTOM_CONF_DIR}/app.ini ]; then
-  # copy over the template configuration file
-  sudo -u gogs -H cp ${SETUP_CONFIG_DIR}/gogs/app.ini ${GOGS_CUSTOM_CONF_DIR}/app.ini
+####
+# copy over the template configuration file
+sudo -u gogs -H cp ${SETUP_CONFIG_DIR}/gogs/app.ini ${GOGS_CUSTOM_CONF_DIR}/app.ini
 
-  sudo -u gogs -H sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{DB_HOST}}/'"${DB_HOST}"':'"${DB_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{DB_PORT}}/'"${DB_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{DB_NAME}}/'"${DB_NAME}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{DB_USER}}/'"${DB_USER}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{DB_PASS}}/'"${DB_PASS}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{DB_SSL_MODE}}/'"${DB_SSL_MODE}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's|{{DB_PATH}}|'"${DB_PATH}"'|' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{DB_HOST}}/'"${DB_HOST}"':'"${DB_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{DB_PORT}}/'"${DB_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{DB_NAME}}/'"${DB_NAME}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{DB_USER}}/'"${DB_USER}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{DB_PASS}}/'"${DB_PASS}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{DB_SSL_MODE}}/'"${DB_SSL_MODE}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's|{{DB_PATH}}|'"${DB_PATH}"'|' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 
-  sudo -u gogs -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's|{{GIT_REPO}}|'"${GOGS_GIT_DIR}"'|' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{DOMAIN}}/'"${GOGS_DOMAIN}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{SECRET_KEY}}/'"${GOGS_SECRET_KEY}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{GOGS_INSTALL_LOCK}}/'"${GOGS_INSTALL_LOCK}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-  sudo -u gogs -H sed 's/{{GOGS_DISABLE_REGISTRATION}}/'"${GOGS_DISABLE_REGISTRATION}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
-fi
+sudo -u gogs -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's|{{GIT_REPO}}|'"${GOGS_GIT_DIR}"'|' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{DOMAIN}}/'"${GOGS_DOMAIN}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{SECRET_KEY}}/'"${GOGS_SECRET_KEY}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{GOGS_INSTALL_LOCK}}/'"${GOGS_INSTALL_LOCK}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{GOGS_DISABLE_REGISTRATION}}/'"${GOGS_DISABLE_REGISTRATION}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+
+sudo -u gogs -H sed 's/{{MAILER_ENABLED}}/'"${MAILER_ENABLED}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{MAILER_HOST}}/'"${MAILER_HOST}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{MAILER_FROM}}/'"${MAILER_FROM}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{MAILER_USER}}/'"${MAILER_USER}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{MAILER_PASS}}/'"${MAILER_PASS}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 
 # TODO: Handle templates
 # Copy over the templates, if no templates are found
 #test -d ${DATA_DIR}/templates || cp -ar ./templates ${DATA_DIR}
 # Sync template folders
 #rsync -rtv ${DATA_DIR}/templates ./templates/
-
-# TODO: Configure SMTP
 
 # due to the nature of docker and its use cases, we allow some time
 # for the database server to come online.
@@ -261,4 +273,3 @@ case "$1" in
 esac
 
 exit 0
-

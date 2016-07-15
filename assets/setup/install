@@ -6,7 +6,7 @@
 # This script is executed during the build of the docker image.
 ###############################################################################
 
-GOGS_VERSION="v0.6.9"
+GOGS_VERSION="v0.9.13"
 
 INSTALL_DIR="/home/gogs/gogs"
 DATA_DIR="/home/gogs/data"
@@ -121,4 +121,3 @@ chmod a+x ${INSTALL_DIR}/start.sh
 
 # cleanup
 rm -rf /var/lib/apt/lists/*
-
