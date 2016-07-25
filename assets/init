@@ -18,6 +18,7 @@ DB_SSL_MODE=${DB_SSL_MODE:-disable}
 
 GOGS_PORT=${GOGS_PORT:-3000}
 GOGS_DOMAIN=${GOGS_DOMAIN:-localhost}
+GOGS_ROOT_URL=${GOGS_ROOT_URL:-localhost}
 GOGS_INSTALL_LOCK=${GOGS_INSTALL_LOCK:-true}
 GOGS_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
 GOGS_DISABLE_REGISTRATION=${GOGS_DISABLE_REGISTRATION:-false}
@@ -193,6 +194,7 @@ sudo -u gogs -H sed 's|{{DB_PATH}}|'"${DB_PATH}"'|' -i ${GOGS_CUSTOM_CONF_DIR}/a
 sudo -u gogs -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 sudo -u gogs -H sed 's|{{GIT_REPO}}|'"${GOGS_GIT_DIR}"'|' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 sudo -u gogs -H sed 's/{{DOMAIN}}/'"${GOGS_DOMAIN}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{ROOT_URL}}/'"${GOGS_ROOT_URL}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 sudo -u gogs -H sed 's/{{SECRET_KEY}}/'"${GOGS_SECRET_KEY}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 sudo -u gogs -H sed 's/{{GOGS_INSTALL_LOCK}}/'"${GOGS_INSTALL_LOCK}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 sudo -u gogs -H sed 's/{{GOGS_DISABLE_REGISTRATION}}/'"${GOGS_DISABLE_REGISTRATION}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
