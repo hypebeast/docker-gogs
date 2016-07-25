@@ -17,6 +17,7 @@ DB_PATH=${DB_PATH:-}
 DB_SSL_MODE=${DB_SSL_MODE:-disable}
 
 GOGS_PORT=${GOGS_PORT:-3000}
+GOGS_PROTOCOL=${GOGS_PROTOCOL:-https}
 GOGS_DOMAIN=${GOGS_DOMAIN:-localhost}
 GOGS_ROOT_URL=${GOGS_ROOT_URL:-localhost}
 GOGS_INSTALL_LOCK=${GOGS_INSTALL_LOCK:-true}
@@ -179,6 +180,7 @@ cd ${INSTALL_DIR}
 ####
 # gogs configuration
 ####
+
 # copy over the template configuration file
 sudo -u gogs -H cp ${SETUP_CONFIG_DIR}/gogs/app.ini ${GOGS_CUSTOM_CONF_DIR}/app.ini
 
@@ -192,6 +194,7 @@ sudo -u gogs -H sed 's/{{DB_SSL_MODE}}/'"${DB_SSL_MODE}"'/' -i ${GOGS_CUSTOM_CON
 sudo -u gogs -H sed 's|{{DB_PATH}}|'"${DB_PATH}"'|' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 
 sudo -u gogs -H sed 's/{{HTTP_PORT}}/'"${GOGS_PORT}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
+sudo -u gogs -H sed 's/{{PROTOCOL}}/'"${GOGS_PROTOCOL}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 sudo -u gogs -H sed 's|{{GIT_REPO}}|'"${GOGS_GIT_DIR}"'|' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 sudo -u gogs -H sed 's/{{DOMAIN}}/'"${GOGS_DOMAIN}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
 sudo -u gogs -H sed 's/{{ROOT_URL}}/'"${GOGS_ROOT_URL}"'/' -i ${GOGS_CUSTOM_CONF_DIR}/app.ini
